@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroWeather | Glassmorphic Weather Dashboard</title>
+  <!-- Google Fonts - Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- Dynamic Background Wrapper -->
+  <div id="app-bg" class="bg-transition weather-default"></div>
+  
+  <!-- Main Glassmorphic Wrapper -->
+  <div class="app-container">
+    
+    <!-- Top Nav Bar -->
+    <header class="glass-header">
+      <div class="brand">
+        <i data-lucide="cloud-sun" class="brand-icon"></i>
+        <h1>AeroWeather</h1>
+      </div>
+      
+      <!-- Search & Controls Section -->
+      <div class="controls-section">
+        <div class="search-container">
+          <div class="search-input-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search city..." autocomplete="off">
+            <button id="clear-search" class="icon-btn hidden">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <!-- Auto-suggestions dropdown -->
+          <ul id="suggestions-list" class="suggestions-dropdown glass-card hidden"></ul>
+        </div>
+        
+        <div class="actions">
+          <button id="favorites-toggle" class="icon-btn btn-glass" title="Favorite Cities">
+            <i data-lucide="star"></i>
+          </button>
+          
+          <button id="recent-toggle" class="icon-btn btn-glass" title="Recent Searches">
+            <i data-lucide="history"></i>
+          </button>
+          
+          <button id="unit-toggle" class="btn-glass text-btn" title="Toggle Unit">
+            <span>°C</span>
+          </button>
+          
+          <button id="theme-toggle" class="icon-btn btn-glass" title="Toggle Theme">
+            <i data-lucide="sun" class="theme-icon-light hidden"></i>
+            <i data-lucide="moon" class="theme-icon-dark"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Collapsible Panels (Favorites & Recents) -->
+    <div id="favorites-panel" class="side-panel glass-card hidden">
+      <div class="panel-header">
+        <h3>Favorite Cities</h3>
+        <button id="close-favorites" class="icon-btn"><i data-lucide="x"></i></button>
+      </div>
+      <ul id="favorites-list" class="panel-list">
+        <!-- Dynmically loaded -->
+        <li class="empty-state">No favorite cities saved. Click the star icon next to a city to save.</li>
+      </ul>
+    </div>
+
+    <div id="recent-panel" class="side-panel glass-card hidden">
+      <div class="panel-header">
+        <h3>Recent Searches</h3>
+        <button id="close-recent" class="icon-btn"><i data-lucide="x"></i></button>
+      </div>
+      <ul id="recent-list" class="panel-list">
+        <!-- Dynamically loaded -->
+        <li class="empty-state">No recent searches.</li>
+      </ul>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-layout">
+      <!-- Loading Overlay -->
+      <div id="loading-spinner" class="spinner-container hidden">
+        <div class="spinner"></div>
+        <p>Fetching weather insights...</p>
+      </div>
+
+      <!-- Error Alert -->
+      <div id="error-message" class="error-container glass-card hidden">
+        <i data-lucide="alert-circle" class="error-icon"></i>
+        <div class="error-text">
+          <h4 id="error-title">City Not Found</h4>
+          <p id="error-desc">Please verify the name or check your internet connection.</p>
+        </div>
+        <button id="close-error" class="icon-btn"><i data-lucide="x"></i></button>
+      </div>
+
+      <!-- Weather Dashboard Grid -->
+      <div id="weather-grid" class="dashboard-grid">
+        
+        <!-- Left Side: Hero Weather Display -->
+        <section class="grid-left">
+          <div class="glass-card hero-weather-card">
+            <div class="card-top">
+              <div class="location-info">
+                <div class="city-row">
+                  <h2 id="current-city">London</h2>
+                  <button id="favorite-btn" class="favorite-icon-btn" title="Add to Favorites">
+                    <i data-lucide="star" class="star-outline"></i>
+                  </button>
+                </div>
+                <p id="current-country">United Kingdom</p>
+                <span id="current-date">Thursday, June 18, 2026</span>
+              </div>
+            </div>
+            
+            <div class="weather-main-details">
+              <div id="current-icon-container" class="large-weather-icon">
+                <!-- Inline animated SVG injected dynamically -->
+              </div>
+              <div class="temp-condition-wrapper">
+                <div class="temp-row">
+                  <span id="current-temp" class="large-temp">19</span><span id="temp-unit" class="large-temp-unit">°C</span>
+                </div>
+                <p id="current-condition" class="weather-desc">Scattered Clouds</p>
+              </div>
+            </div>
+
+            <div class="weather-sub-details">
+              <div class="sub-item">
+                <span class="sub-label">Feels Like</span>
+                <span id="feels-like" class="sub-value">18°C</span>
+              </div>
+              <div class="divider"></div>
+              <div class="sub-item">
+                <span class="sub-label">Low / High</span>
+                <span id="temp-min-max" class="sub-value">14°C / 21°C</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Side: Weather Metrics & Visualizations -->
+        <section class="grid-right">
+          
+          <!-- Key Metrics Row -->
+          <div class="metrics-grid">
+            
+            <!-- AQI Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Air Quality</span>
+                <i data-lucide="wind" class="metric-icon purple"></i>
+              </div>
+              <div class="metric-body">
+                <div class="aqi-display">
+                  <span id="aqi-value" class="metric-value">Good</span>
+                  <span id="aqi-badge" class="aqi-dot"></span>
+                </div>
+                <div class="aqi-pollutants">
+                  <div class="pollutant">
+                    <span>PM2.5</span>
+                    <strong id="pm25-val">4.5 µg/m³</strong>
+                  </div>
+                  <div class="pollutant">
+                    <span>NO₂</span>
+                    <strong id="no2-val">12.1 µg/m³</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Wind Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Wind</span>
+                <i data-lucide="navigation" class="metric-icon blue"></i>
+              </div>
+              <div class="metric-body">
+                <span id="wind-speed" class="metric-value">12 km/h</span>
+                <div class="wind-direction">
+                  <div class="compass-circle">
+                    <i data-lucide="arrow-up" id="wind-dir-arrow" class="compass-arrow"></i>
+                  </div>
+                  <span id="wind-dir-text">ENE</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Humidity Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Humidity</span>
+                <i data-lucide="droplet" class="metric-icon teal"></i>
+              </div>
+              <div class="metric-body">
+                <span id="humidity-value" class="metric-value">62%</span>
+                <div class="humidity-status-bar">
+                  <div id="humidity-bar-fill" class="humidity-fill" style="width: 62%;"></div>
+                </div>
+                <span id="humidity-status" class="metric-subtext">Normal Comfort</span>
+              </div>
+            </div>
+
+            <!-- Sunrise & Sunset Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Sunrise & Sunset</span>
+                <i data-lucide="sunset" class="metric-icon orange"></i>
+              </div>
+              <div class="metric-body solar-body">
+                <div class="solar-time-container">
+                  <div class="solar-event">
+                    <i data-lucide="sunrise" class="orange"></i>
+                    <div>
+                      <span class="sub-label">Sunrise</span>
+                      <strong id="sunrise-time">04:43 AM</strong>
+                    </div>
+                  </div>
+                  <div class="solar-event">
+                    <i data-lucide="sunset" class="orange"></i>
+                    <div>
+                      <span class="sub-label">Sunset</span>
+                      <strong id="sunset-time">09:21 PM</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mid Section: Interactive Chart & Map Grid -->
+          <div class="visuals-grid">
+            <!-- Chart Card -->
+            <div class="glass-card chart-card">
+              <div class="card-header">
+                <h3>Temperature Trend (Next 24h)</h3>
+                <span class="chart-subtitle">Hourly Forecast</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="temp-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Map Card -->
+            <div class="glass-card map-card">
+              <div class="card-header">
+                <h3>Location Map</h3>
+                <span class="map-subtitle" id="map-coords">Lat: 51.51 | Lon: -0.13</span>
+              </div>
+              <div class="map-container">
+                <div id="map"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Section: 5-Day Forecast -->
+          <div class="glass-card forecast-card">
+            <div class="card-header">
+              <h3>5-Day Forecast</h3>
+            </div>
+            <div id="forecast-container" class="forecast-grid">
+              <!-- Cards generated dynamically -->
+              <div class="forecast-day-card">
+                <span class="day-name">Fri</span>
+                <div class="day-icon"></div>
+                <span class="day-cond">Rainy</span>
+                <div class="day-temps">
+                  <span class="day-max">20°</span>
+                  <span class="day-min">12°</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+        
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="glass-footer">
+      <p>&copy; 2026 AeroWeather. Crafted with raw CSS glassmorphism, Leaflet.js, and Chart.js. Weather data via Open-Meteo.</p>
+    </footer>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+  
+  <!-- Chart.js JS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Script -->
+  <script src="script.js"></script>
+</body>
+</html>
