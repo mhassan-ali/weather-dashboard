@@ -14,6 +14,10 @@ AeroWeather is a modern, responsive, frontend-only weather dashboard designed wi
 - **Custom Animated SVG Icons**: Built-in, vector-based weather icons that animate dynamically via CSS `@keyframes` (spinning sun, floating clouds, falling rain/snow, flashing lightning, blowing wind).
 - **Air Quality Index (AQI)**: Captures USA AQI indices with color-coded severity indicator dots and key pollutant readouts (PM2.5, NO₂).
 - **Sunrise & Sunset Times**: Properly formatted 12-hour AM/PM solar events calculated using the city's local timezone settings.
+- **Weather Alerts Badge**: Displays critical alerts dynamically based on current conditions (Heatwave for temp > 38°C, Storm for wind > 50 km/h, Heavy Rain for rain probability > 70%).
+- **UV Index Metric**: Shows the current UV index value, category color (Low to Extreme), and progress bar fill.
+- **Visibility & Pressure Cards**: Includes cards displaying absolute visibility (km) and barometric sea-level pressure (hPa).
+- **Precipitation Breakdown**: Displays rain probability (%) and precipitation volume (mm).
 - **Favorite Cities & History**: 
   - Save favorite cities to a persistent side panel (saved to `localStorage`).
   - Stores the last 5 searched cities as recent searches (saved to `localStorage`).

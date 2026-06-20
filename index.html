@@ -126,6 +126,10 @@
                 </div>
                 <p id="current-country">United Kingdom</p>
                 <span id="current-date">Thursday, June 18, 2026</span>
+                <div id="weather-alert-badge" class="alerts-badge hidden">
+                  <i data-lucide="alert-triangle"></i>
+                  <span id="weather-alert-text"></span>
+                </div>
               </div>
             </div>
             
@@ -238,6 +242,65 @@
                       <span class="sub-label">Sunset</span>
                       <strong id="sunset-time">09:21 PM</strong>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- UV Index Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>UV Index</span>
+                <i data-lucide="sun" class="metric-icon orange"></i>
+              </div>
+              <div class="metric-body">
+                <span id="uv-value" class="metric-value">0</span>
+                <span id="uv-category" class="metric-subtext">Low</span>
+                <div class="uv-bar">
+                  <div id="uv-bar-fill" class="uv-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visibility Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Visibility</span>
+                <i data-lucide="eye" class="metric-icon blue"></i>
+              </div>
+              <div class="metric-body">
+                <span id="visibility-value" class="metric-value">0 km</span>
+                <span id="visibility-status" class="metric-subtext">Clear view</span>
+              </div>
+            </div>
+
+            <!-- Pressure Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Pressure</span>
+                <i data-lucide="gauge" class="metric-icon teal"></i>
+              </div>
+              <div class="metric-body">
+                <span id="pressure-value" class="metric-value">1013 hPa</span>
+                <span id="pressure-status" class="metric-subtext">Normal</span>
+              </div>
+            </div>
+
+            <!-- Precipitation Card -->
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span>Precipitation</span>
+                <i data-lucide="cloud-rain" class="metric-icon blue"></i>
+              </div>
+              <div class="metric-body">
+                <div class="aqi-display">
+                  <span id="precip-prob" class="metric-value">0%</span>
+                  <span class="metric-subtext" style="margin-left: 8px;">Chance</span>
+                </div>
+                <div class="aqi-pollutants">
+                  <div class="pollutant">
+                    <span>Volume</span>
+                    <strong id="precip-volume">0 mm</strong>
                   </div>
                 </div>
               </div>

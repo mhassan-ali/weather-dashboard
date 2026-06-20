@@ -114,7 +114,18 @@ const elements = {
   sunsetTime: document.getElementById('sunset-time'),
   
   mapCoords: document.getElementById('map-coords'),
-  forecastContainer: document.getElementById('forecast-container')
+  forecastContainer: document.getElementById('forecast-container'),
+  weatherAlertBadge: document.getElementById('weather-alert-badge'),
+  weatherAlertText: document.getElementById('weather-alert-text'),
+  uvValue: document.getElementById('uv-value'),
+  uvCategory: document.getElementById('uv-category'),
+  uvBarFill: document.getElementById('uv-bar-fill'),
+  visibilityValue: document.getElementById('visibility-value'),
+  visibilityStatus: document.getElementById('visibility-status'),
+  pressureValue: document.getElementById('pressure-value'),
+  pressureStatus: document.getElementById('pressure-status'),
+  precipProb: document.getElementById('precip-prob'),
+  precipVolume: document.getElementById('precip-volume')
 };
 
 // Initialize Application
@@ -125,6 +136,9 @@ async function init() {
   
   // Load initial city
   await fetchWeatherData(state.currentCity);
+  
+  // Render initial weather details
+  renderWeatherDetails();
   
   // Initialize map and chart
   initMap(state.currentCity.lat, state.currentCity.lon);
@@ -384,7 +398,7 @@ async function handleCitySelection(city) {
 async function fetchWeatherData({ lat, lon }) {
   try {
     // 1. Fetch Weather Forecast Data
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m,precipitation,pressure_msl&hourly=temperature_2m,relative_humidity_2m,weather_code,uv_index,visibility,precipitation_probability,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
     const weatherResponse = await fetch(weatherUrl);
     if (!weatherResponse.ok) throw new Error('Forecast API returned non-200');
     state.weatherData = await weatherResponse.json();
@@ -551,10 +565,14 @@ function renderWeatherDetails() {
   }
   
   // Metric Details
+  renderAlerts();
   renderAQI();
   renderWind();
   renderHumidity();
   renderSolarTimes();
+  renderUVIndex();
+  renderVisibilityAndPressure();
+  renderPrecipitation();
   render5DayForecast();
 }
 
@@ -625,6 +643,129 @@ function renderSolarTimes() {
   elements.sunsetTime.textContent = formatTimeISO(daily.sunset[0]);
 }
 
+// Helper to get index of current hour in hourly forecast
+function getCurrentHourIndex() {
+  if (!state.weatherData || !state.weatherData.hourly) return 0;
+  const hourly = state.weatherData.hourly;
+  const now = new Date();
+  const currentHour = now.getHours();
+  let startIndex = 0;
+  const timeStrings = hourly.time;
+  for (let i = 0; i < timeStrings.length; i++) {
+    const itemDate = new Date(timeStrings[i]);
+    if (itemDate.getDate() === now.getDate() && itemDate.getHours() === currentHour) {
+      startIndex = i;
+      break;
+    }
+  }
+  return startIndex;
+}
+
+// Weather Alerts Badge renderer
+function renderAlerts() {
+  if (!state.weatherData) return;
+  const current = state.weatherData.current;
+  const hourly = state.weatherData.hourly;
+  const startIndex = getCurrentHourIndex();
+  
+  const alerts = [];
+  if (current.temperature_2m > 38) {
+    alerts.push('Heatwave');
+  }
+  if (current.wind_speed_10m > 50) {
+    alerts.push('Storm');
+  }
+  if (hourly.precipitation_probability && hourly.precipitation_probability[startIndex] > 70) {
+    alerts.push('Heavy Rain');
+  }
+  
+  if (alerts.length > 0) {
+    elements.weatherAlertText.textContent = `${alerts.join(' & ')} Alert`;
+    elements.weatherAlertBadge.classList.remove('hidden');
+  } else {
+    elements.weatherAlertBadge.classList.add('hidden');
+  }
+}
+
+// UV Index renderer
+function renderUVIndex() {
+  if (!state.weatherData || !state.weatherData.hourly) return;
+  const hourly = state.weatherData.hourly;
+  const startIndex = getCurrentHourIndex();
+  const uvVal = Math.round(hourly.uv_index[startIndex] || 0);
+  
+  elements.uvValue.textContent = uvVal;
+  
+  let category = 'Low';
+  let colorClass = 'uv-low';
+  
+  if (uvVal <= 2) {
+    category = 'Low';
+    colorClass = 'uv-low';
+  } else if (uvVal <= 5) {
+    category = 'Moderate';
+    colorClass = 'uv-moderate';
+  } else if (uvVal <= 7) {
+    category = 'High';
+    colorClass = 'uv-high';
+  } else if (uvVal <= 10) {
+    category = 'Very High';
+    colorClass = 'uv-very-high';
+  } else {
+    category = 'Extreme';
+    colorClass = 'uv-extreme';
+  }
+  
+  elements.uvCategory.textContent = category;
+  
+  const fillPercent = Math.min((uvVal / 12) * 100, 100);
+  elements.uvBarFill.style.width = `${fillPercent}%`;
+  elements.uvBarFill.className = `uv-fill ${colorClass}`;
+}
+
+// Visibility & Pressure renderer
+function renderVisibilityAndPressure() {
+  if (!state.weatherData) return;
+  const current = state.weatherData.current;
+  const hourly = state.weatherData.hourly;
+  const startIndex = getCurrentHourIndex();
+  
+  // Visibility (meters to km)
+  const visMeters = hourly.visibility ? hourly.visibility[startIndex] : 10000;
+  const visKm = visMeters / 1000;
+  elements.visibilityValue.textContent = `${visKm.toFixed(1)} km`;
+  
+  let visStatus = 'Clear view';
+  if (visKm >= 10) visStatus = 'Clear view';
+  else if (visKm >= 5) visStatus = 'Moderate haze';
+  else visStatus = 'Poor visibility';
+  elements.visibilityStatus.textContent = visStatus;
+  
+  // Pressure
+  const pressure = current.pressure_msl || 1013;
+  elements.pressureValue.textContent = `${Math.round(pressure)} hPa`;
+  
+  let pressStatus = 'Normal';
+  if (pressure > 1015) pressStatus = 'High Pressure';
+  else if (pressure < 1008) pressStatus = 'Low Pressure';
+  else pressStatus = 'Normal';
+  elements.pressureStatus.textContent = pressStatus;
+}
+
+// Precipitation renderer
+function renderPrecipitation() {
+  if (!state.weatherData) return;
+  const current = state.weatherData.current;
+  const hourly = state.weatherData.hourly;
+  const startIndex = getCurrentHourIndex();
+  
+  const prob = hourly.precipitation_probability ? hourly.precipitation_probability[startIndex] : 0;
+  const volume = current.precipitation !== undefined ? current.precipitation : (hourly.precipitation ? hourly.precipitation[startIndex] : 0);
+  
+  elements.precipProb.textContent = `${prob}%`;
+  elements.precipVolume.textContent = `${volume.toFixed(1)} mm`;
+}
+
 // 5-Day Forecast renderer
 function render5DayForecast() {
   const daily = state.weatherData.daily;
@@ -668,21 +809,7 @@ function updateChart() {
   const ctx = document.getElementById('temp-chart').getContext('2d');
   const hourly = state.weatherData.hourly;
   
-  // Slice next 24 elements representing future 24 hours
-  // Let's get the current hour index to start correctly
-  const now = new Date();
-  const currentHour = now.getHours();
-  
-  // Parse and match timestamps to find closest hour
-  let startIndex = 0;
-  const timeStrings = hourly.time;
-  for (let i = 0; i < timeStrings.length; i++) {
-    const itemDate = new Date(timeStrings[i]);
-    if (itemDate.getDate() === now.getDate() && itemDate.getHours() === currentHour) {
-      startIndex = i;
-      break;
-    }
-  }
+  const startIndex = getCurrentHourIndex();
   
   const slicedTimes = hourly.time.slice(startIndex, startIndex + 24).map(t => {
     return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
